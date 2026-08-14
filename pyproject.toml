@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "dbackup-mcp"
 version = "0.1.0"
-description = "A typed Model Context Protocol server for safe DBackup backup administration through its authenticated API."
+description = "A typed Model Context Protocol server for curated DBackup backup administration through its authenticated API."
 readme = "README.md"
 requires-python = ">=3.12"
 license = { text = "MIT" }
