@@ -1,0 +1,76 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Require public repository
+        if: ${{ github.event.repository.private }}
+        run: |
+          echo "Version releases require the repository to be public." >&2
+          exit 1
+
+      - name: Validate release tag
+        shell: python
+        run: |
+          import os
+          import re
+          import subprocess
+          import tomllib
+
+          tag = os.environ["GITHUB_REF_NAME"]
+          if re.fullmatch(r"v[0-9]+\.[0-9]+\.[0-9]+", tag) is None:
+              raise SystemExit(f"release tag must be strict SemVer vMAJOR.MINOR.PATCH, got {tag!r}")
+
+          with open("pyproject.toml", "rb") as handle:
+              version = tomllib.load(handle)["project"]["version"]
+          if tag != f"v{version}":
+              raise SystemExit(f"tag {tag!r} does not match pyproject.toml version {version!r}")
+
+          subprocess.run(
+              ["git", "merge-base", "--is-ancestor", os.environ["GITHUB_SHA"], "origin/main"],
+              check=True,
+          )
+
+      - name: Verify exact tag
+        run: ./scripts/verify.sh
+
+      - name: Build reproducible release artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf dist
+          export SOURCE_DATE_EPOCH="$(git show -s --format=%ct HEAD)"
+          uv build --out-dir dist
+          sha256sum dist/*.whl dist/*.tar.gz | sed 's#  dist/#  #' > SHA256SUMS
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release create "${GITHUB_REF_NAME}" \
+            dist/*.whl \
+            dist/*.tar.gz \
+            SHA256SUMS \
+            --verify-tag \
+            --title "dbackup-mcp ${GITHUB_REF_NAME}" \
+            --generate-notes

@@ -1,8 +1,94 @@
 # dbackup-mcp
 
-A typed Model Context Protocol server for safe administration of [DBackup](https://github.com/Skyfay/DBackup) through its authenticated API.
+A typed Model Context Protocol server for curated backup administration of [DBackup](https://github.com/Skyfay/DBackup) through its authenticated API.
 
 This community project is not affiliated with or endorsed by the DBackup project. DBackup itself is licensed under GPL-3.0; `dbackup-mcp` is a separate integration project licensed under MIT.
+
+## Requirements
+
+- Python `3.12+`
+- DBackup `3.2.0` as the tested and supported baseline; other versions are unverified unless explicitly documented
+- a DBackup API key with only the permissions required by the enabled MCP workflows
+- an MCP client or gateway that supports STDIO servers
+- `uv` for the documented source workflow
+
+## Configuration
+
+| Variable | Required | Default | Meaning |
+|---|---:|---|---|
+| `DBACKUP_BASE_URL` | yes | - | DBackup HTTP(S) origin without `/api`, for example `https://backup.example.com`. |
+| `DBACKUP_API_KEY_FILE` | yes | - | Private regular file containing one DBackup API key. Group/other permissions are rejected. |
+| `DBACKUP_CREDENTIAL_SECRET_DIR` | no | - | Private directory containing mode-`0600` JSON credential payload files used only by explicit credential create/update tools. |
+| `DBACKUP_REQUEST_TIMEOUT_SECONDS` | no | `15` | Per-request timeout in seconds, greater than zero and at most 120. |
+
+Example MCP registration from an installed package:
+
+```json
+{
+  "mcpServers": {
+    "dbackup": {
+      "command": "dbackup-mcp",
+      "env": {
+        "DBACKUP_BASE_URL": "https://backup.example.com",
+        "DBACKUP_API_KEY_FILE": "/run/secrets/dbackup-api-key",
+        "DBACKUP_CREDENTIAL_SECRET_DIR": "/run/secrets/dbackup-credentials"
+      }
+    }
+  }
+}
+```
+
+The credential directory is optional. Omit it when the MCP should not import or update DBackup credential profiles from local files.
+
+## DBackup API-key permissions
+
+The complete 43-tool surface can require the following DBackup `3.2.0` permissions, depending on which tools are actually invoked:
+
+```text
+jobs:read
+jobs:write
+jobs:execute
+history:read
+sources:view
+sources:write
+destinations:read
+destinations:write
+notifications:read
+notifications:write
+storage:read
+storage:restore
+credentials:read
+credentials:write
+credentials:delete
+```
+
+Do not grant permissions merely because they exist. In particular, this MCP does not require or expose `credentials:reveal`, `storage:download`, `storage:delete`, `sources:read`, `vault:read`, `vault:write`, user/RBAC permissions or API-key administration.
+
+A gateway or MCP client can further restrict the visible tool set. A read-oriented consumer should not receive mutation tools just because the DBackup API key is capable of them.
+
+## Running from source
+
+The repository includes `uv.lock` for a reproducible source environment.
+
+```bash
+uv sync --frozen --extra test
+DBACKUP_BASE_URL=https://backup.example.com \
+DBACKUP_API_KEY_FILE=/run/secrets/dbackup-api-key \
+uv run --frozen dbackup-mcp
+```
+
+A gateway can launch the checkout directly:
+
+```json
+{
+  "command": "uv",
+  "args": ["run", "--frozen", "--directory", "/path/to/dbackup-mcp", "dbackup-mcp"],
+  "env": {
+    "DBACKUP_BASE_URL": "https://backup.example.com",
+    "DBACKUP_API_KEY_FILE": "/run/secrets/dbackup-api-key"
+  }
+}
+```
 
 ## Design
 
@@ -12,7 +98,7 @@ The current source targets DBackup `3.2.0`. Most operations use DBackup's public
 
 ## Coverage
 
-Version `0.1.0` exposes 43 curated tools.
+Source package version `0.1.0` exposes 43 curated tools. Release publication is a separate lifecycle step.
 
 | Area | Coverage | Notes |
 |---|---|---|
@@ -20,8 +106,8 @@ Version `0.1.0` exposes 43 curated tools.
 | Jobs | Broad | List, get, plan, create, replace/update, clone, enable/disable, delete and manual run. Database and directory sources can be combined. |
 | Execution and history | Broad | Execution history, execution detail, cancellation and notification-delivery logs. |
 | Adapters | Broad | List/get/create/update/clone/delete, connection test, directory browse, database discovery/stats, health and database-version history. |
-| Credentials | Safe management subset | Metadata, usage, generated SSH credentials and create/update through private local secret files. Credential reveal is excluded. |
-| Storage and restore | Broad safe subset | Backup listing, verification, storage history, archive browsing, restore analysis, restore-target preflight, full restore and selected-file restore. Binary download and backup deletion are excluded. |
+| Credentials | Credential-reference subset | Metadata, usage, generated SSH credentials and create/update through private local secret files. Credential reveal is excluded. |
+| Storage and restore | Bounded restore subset | Backup listing, verification, storage history, archive browsing, restore analysis, restore-target preflight, full restore and selected-file restore. Binary download and backup deletion are excluded. |
 | Templates and encryption profiles | Reference-only | Jobs can carry known IDs, but DBackup `3.2.0` does not expose public API-key REST discovery for every retention, naming, schedule, notification, exclude-pattern or encryption-profile object used by its web UI. |
 | Authentication and application administration | Excluded | API-key management, users, RBAC, SSO, recovery-kit operations and generic system tasks remain outside this MCP. |
 
@@ -101,6 +187,20 @@ The file must be delivered by a separate secret-management mechanism, must be a 
 
 Restore mutations require `confirm=true`. Granular file restore also supports DBackup's dry-run path so selections and target paths can be checked without writing restored data.
 
+## Security model
+
+- API keys and credential payloads are file-backed and never accepted as MCP plaintext arguments.
+- API-key and credential files must be regular files with no group or other permissions; the credential directory must also be private.
+- Adapter MCP inputs reject DBackup `3.2.0` sensitive configuration keys and use credential-profile references instead.
+- DBackup API responses are recursively sanitized before model-visible output is returned.
+- HTTP error bodies are reduced to sanitized DBackup error/message text; raw response bodies are not surfaced.
+- No generic request escape hatch exists.
+- Job, adapter and credential deletion, execution cancellation, and full restore require `confirm=true`. Selected-file restore requires `confirm=true` unless `dry_run=true`. These mutation tools publish destructive MCP annotations.
+- All tools publish complete MCP annotations with `openWorldHint=false`.
+- The DBackup API key remains the authorization boundary; the MCP server does not invent a second RBAC system.
+
+See [SECURITY.md](SECURITY.md) for vulnerability reporting and the maintained security boundary.
+
 ## Deliberate exclusions
 
 The server does not expose:
@@ -119,113 +219,13 @@ The server does not expose:
 
 These are product and security boundaries, not missing raw escape hatches.
 
-## Requirements
-
-- Python `3.12+`
-- DBackup `3.2.0`, or a compatible release whose used routes retain the same contract
-- a DBackup API key with only the permissions required by the enabled MCP workflows
-- an MCP client or gateway that supports STDIO servers
-- `uv` for the documented source workflow
-
-## DBackup API-key permissions
-
-The complete 43-tool surface can require the following DBackup `3.2.0` permissions, depending on which tools are actually invoked:
-
-```text
-jobs:read
-jobs:write
-jobs:execute
-history:read
-sources:view
-sources:write
-destinations:read
-destinations:write
-notifications:read
-notifications:write
-storage:read
-storage:restore
-credentials:read
-credentials:write
-credentials:delete
-```
-
-Do not grant permissions merely because they exist. In particular, this MCP does not require or expose `credentials:reveal`, `storage:download`, `storage:delete`, `sources:read`, `vault:read`, `vault:write`, user/RBAC permissions or API-key administration.
-
-A gateway or MCP client can further restrict the visible tool set. A read-oriented consumer should not receive mutation tools just because the DBackup API key is capable of them.
-
-## Configuration
-
-| Variable | Required | Default | Meaning |
-|---|---:|---|---|
-| `DBACKUP_BASE_URL` | yes | - | DBackup HTTP(S) origin without `/api`, for example `https://backup.example.com`. |
-| `DBACKUP_API_KEY_FILE` | yes | - | Private regular file containing one DBackup API key. Group/other permissions are rejected. |
-| `DBACKUP_CREDENTIAL_SECRET_DIR` | no | - | Private directory containing mode-`0600` JSON credential payload files used only by explicit credential create/update tools. |
-| `DBACKUP_REQUEST_TIMEOUT_SECONDS` | no | `15` | Per-request timeout in seconds, greater than zero and at most 120. |
-
-Example MCP registration from an installed package:
-
-```json
-{
-  "mcpServers": {
-    "dbackup": {
-      "command": "dbackup-mcp",
-      "env": {
-        "DBACKUP_BASE_URL": "https://backup.example.com",
-        "DBACKUP_API_KEY_FILE": "/run/secrets/dbackup-api-key",
-        "DBACKUP_CREDENTIAL_SECRET_DIR": "/run/secrets/dbackup-credentials"
-      }
-    }
-  }
-}
-```
-
-The credential directory is optional. Omit it when the MCP should not import or update DBackup credential profiles from local files.
-
-## Running from source
-
-The repository includes `uv.lock` for a reproducible source environment.
-
-```bash
-uv sync --frozen --extra test
-DBACKUP_BASE_URL=https://backup.example.com \
-DBACKUP_API_KEY_FILE=/run/secrets/dbackup-api-key \
-uv run --frozen dbackup-mcp
-```
-
-A gateway can launch the checkout directly:
-
-```json
-{
-  "command": "uv",
-  "args": ["run", "--frozen", "--directory", "/path/to/dbackup-mcp", "dbackup-mcp"],
-  "env": {
-    "DBACKUP_BASE_URL": "https://backup.example.com",
-    "DBACKUP_API_KEY_FILE": "/run/secrets/dbackup-api-key"
-  }
-}
-```
-
-## Security model
-
-- API keys and credential payloads are file-backed and never accepted as MCP plaintext arguments.
-- API-key and credential files must be regular files with no group or other permissions; the credential directory must also be private.
-- Adapter MCP inputs reject DBackup `3.2.0` sensitive configuration keys and use credential-profile references instead.
-- DBackup API responses are recursively sanitized before model-visible output is returned.
-- HTTP error bodies are reduced to sanitized DBackup error/message text; raw response bodies are not surfaced.
-- No generic request escape hatch exists.
-- Delete, cancel and restore operations require explicit confirmation where appropriate and publish destructive MCP annotations.
-- All tools publish complete MCP annotations with `openWorldHint=false`.
-- The DBackup API key remains the authorization boundary; the MCP server does not invent a second RBAC system.
-
-See [SECURITY.md](SECURITY.md) for vulnerability reporting and the maintained security boundary.
-
 ## Compatibility
 
 DBackup's bundled `3.2.0` OpenAPI specification does not fully describe its directory-job and granular file-restore model. This project therefore keeps a deliberately small `3.2.0` compatibility layer tested against the corresponding runtime routes rather than generating a broad client from OpenAPI alone.
 
 Some objects used by DBackup's web job editor—such as retention policies, encryption profiles, naming templates, schedule presets and notification templates—are loaded through application-internal server actions instead of public API-key REST discovery. `dbackup-mcp` does not depend on those internal UI actions. A known ID may be supplied when the public job API accepts it; creating or discovering such objects remains an operator/UI bootstrap responsibility until DBackup exposes a supported REST contract for them.
 
-A newer DBackup release can therefore be compatible without being automatically supported. Review route/schema changes and rerun the contract suite before expanding the declared compatibility range.
+DBackup `3.2.0` is the tested and supported baseline. A newer DBackup release may remain compatible, but it is unverified until route/schema changes have been reviewed and the contract suite has passed for that version.
 
 ## Development and verification
 
@@ -241,7 +241,9 @@ Dependency version updates are configured through Dependabot for both `uv` and G
 
 ## Release lifecycle
 
-Normal development validates source but does not publish a release. Accepted version tags are separate release gates. Before the first public release, the repository source, relevant Git history, dependency state, security scans, public metadata and fresh-checkout workflow must all pass public-readiness review.
+Normal development validates source but does not publish a release. An accepted strict SemVer tag (`vMAJOR.MINOR.PATCH`) triggers the repository release workflow. The workflow fails closed while the repository is private, requires the tag to match `pyproject.toml`, requires the tagged commit to belong to `main`, reruns `./scripts/verify.sh`, builds wheel and source-distribution artifacts with `SOURCE_DATE_EPOCH`, writes `SHA256SUMS`, and publishes those files in a GitHub Release. It does not publish to PyPI.
+
+Before the first public release, repository source, relevant Git history, dependency state, security scans, public metadata and the fresh-checkout workflow must all pass public-readiness review.
 
 ## License
 
