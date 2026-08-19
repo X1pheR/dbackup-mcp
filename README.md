@@ -109,7 +109,7 @@ Run the repository-local verification entry point:
 
 GitHub Actions uses the same verification path. Dependabot maintains the locked dependency set and pinned workflow dependencies within accepted compatibility ranges. OpenSSF Scorecard runs on `main` and weekly and publishes its public result for independent repository-security review.
 
-Normal development does not publish a release. An accepted strict SemVer tag (`vMAJOR.MINOR.PATCH`) triggers the release workflow, which fails closed while the repository is private, verifies the exact tag/source/package version, reruns verification, proves two independent wheel/source builds are byte-identical, creates a draft release, attaches artifacts plus `SHA256SUMS`, and only then publishes the release. It does not publish to PyPI.
+Normal development does not publish a release. An accepted strict SemVer tag (`vMAJOR.MINOR.PATCH`) triggers the release workflow, which fails closed while the repository is private, verifies the exact tag/source/package version, reruns verification, proves two independent wheel/source builds are byte-identical, generates signed GitHub/Sigstore build provenance for the release artifacts, creates a draft release, attaches artifacts plus `SHA256SUMS` and the provenance bundle, and only then publishes the release. It does not publish to PyPI.
 
 ## License
 

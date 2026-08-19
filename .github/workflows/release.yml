@@ -23,6 +23,8 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: write
+      id-token: write
+      attestations: write
     env:
       RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
       EXPECTED_SHA: ${{ github.event_name == 'workflow_dispatch' && inputs.expected_sha || github.sha }}
@@ -77,6 +79,21 @@ jobs:
           cp "$release_work_dir/dist-a/"* dist/
           sha256sum dist/*.whl dist/*.tar.gz | sed 's#  dist/#  #' > SHA256SUMS
 
+      - name: Attest release artifacts
+        id: attest
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
+        with:
+          subject-path: "dist/*"
+
+      - name: Prepare provenance bundle
+        env:
+          ATTESTATION_BUNDLE: ${{ steps.attest.outputs.bundle-path }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s "${ATTESTATION_BUNDLE}"
+          cp "${ATTESTATION_BUNDLE}" "dbackup-mcp-${RELEASE_TAG}.sigstore.json"
+
       - name: Create draft GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -85,7 +102,7 @@ jobs:
       - name: Attach release assets
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "${RELEASE_TAG}" dist/*.whl dist/*.tar.gz SHA256SUMS
+        run: gh release upload "${RELEASE_TAG}" dist/*.whl dist/*.tar.gz SHA256SUMS "dbackup-mcp-${RELEASE_TAG}.sigstore.json"
 
       - name: Publish immutable GitHub Release
         env:
