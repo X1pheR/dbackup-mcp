@@ -8,7 +8,7 @@ The latest maintained release line is the supported public baseline unless a rel
 
 Do not open a public issue for a suspected vulnerability, leaked credential or secret-handling defect.
 
-Use GitHub private vulnerability reporting when it is available for this repository. If that channel is not available, contact the repository owner through the GitHub profile and request a private reporting channel without including exploit details or secret values in a public message.
+Use [GitHub private vulnerability reporting](https://github.com/X1pheR/dbackup-mcp/security/advisories/new) for this repository. If that channel is unexpectedly unavailable, contact the repository owner through the GitHub profile and request a private reporting channel without including exploit details or secret values in a public message.
 
 Useful reports include:
 
