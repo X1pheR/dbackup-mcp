@@ -1,5 +1,7 @@
 # dbackup-mcp
 
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/X1pheR/dbackup-mcp/badge)](https://scorecard.dev/viewer/?uri=github.com/X1pheR/dbackup-mcp)
+
 A typed Model Context Protocol server for curated backup administration of [DBackup](https://github.com/Skyfay/DBackup) through its authenticated API.
 
 This community project is not affiliated with or endorsed by the DBackup project. DBackup is licensed under GPL-3.0; `dbackup-mcp` is a separate integration project licensed under MIT.
@@ -18,6 +20,12 @@ This community project is not affiliated with or endorsed by the DBackup project
 The server deliberately excludes raw HTTP, credential reveal, backup download/deletion, API-key administration, user/RBAC/SSO administration and unsupported DBackup UI-internal server actions.
 
 See the complete [Tool reference](docs/tools.md) for every tool, mutation classification, destructive semantics, permissions and important guards.
+
+## Feedback and contributions
+
+Use [GitHub Issues](https://github.com/X1pheR/dbackup-mcp/issues) for bug reports and feature requests and pull requests for proposed changes. See [CONTRIBUTING.md](CONTRIBUTING.md) for the development workflow, test requirements, and change expectations. Security issues must follow the private process in [SECURITY.md](SECURITY.md).
+
+User-visible release changes are summarized in [CHANGELOG.md](CHANGELOG.md).
 
 ## Requirements
 
@@ -99,9 +107,9 @@ Run the repository-local verification entry point:
 ./scripts/verify.sh
 ```
 
-GitHub Actions uses the same verification path. Dependabot maintains the locked dependency set within accepted compatibility ranges.
+GitHub Actions uses the same verification path. Dependabot maintains the locked dependency set and pinned workflow dependencies within accepted compatibility ranges. OpenSSF Scorecard runs on `main` and weekly and publishes its public result for independent repository-security review.
 
-Normal development does not publish a release. An accepted strict SemVer tag (`vMAJOR.MINOR.PATCH`) triggers the release workflow, which fails closed while the repository is private, verifies the tag and package version, reruns verification, builds reproducible wheel/source artifacts plus `SHA256SUMS`, and publishes a GitHub Release. It does not publish to PyPI.
+Normal development does not publish a release. An accepted strict SemVer tag (`vMAJOR.MINOR.PATCH`) triggers the release workflow, which fails closed while the repository is private, verifies the exact tag/source/package version, reruns verification, proves two independent wheel/source builds are byte-identical, creates a draft release, attaches artifacts plus `SHA256SUMS`, and only then publishes the release. It does not publish to PyPI.
 
 ## License
 

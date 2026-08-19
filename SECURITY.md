@@ -2,7 +2,7 @@
 
 ## Supported versions
 
-Until the first tagged release, security fixes are made on the current `main` branch. After `v0.1.0`, the latest maintained release line is the supported public baseline unless a release note says otherwise.
+The latest maintained release line is the supported public baseline unless a release note says otherwise. Security fixes are developed on `main` and released through the normal versioned release lifecycle.
 
 ## Reporting a vulnerability
 
@@ -37,6 +37,6 @@ A security issue includes any path that allows a caller to bypass these boundari
 
 ## Dependency and code security
 
-The repository uses locked Python dependencies, repository-local verification, GitHub Actions CI and Dependabot configuration. Public-release acceptance also requires applicable GitHub-native dependency alerts, secret scanning with push protection and CodeQL code scanning to be reviewed and green before a release is published.
+The repository uses locked Python dependencies, full-SHA-pinned GitHub Actions, repository-local verification, GitHub Actions CI, Dependabot and OpenSSF Scorecard. Public-release acceptance also requires applicable GitHub-native dependency alerts, secret scanning with push protection and CodeQL code scanning to be reviewed and green before a release is published.
 
 These scanners supplement rather than replace source/history review and the project test suite.
