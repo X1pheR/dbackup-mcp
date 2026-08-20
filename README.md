@@ -2,6 +2,7 @@
 
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/X1pheR/dbackup-mcp/badge)](https://scorecard.dev/viewer/?uri=github.com/X1pheR/dbackup-mcp)
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/14174/badge)](https://www.bestpractices.dev/projects/14174)
+[![Verified by M8ven](https://m8ven.ai/badge/mcp/x1pher-dbackup-mcp-1ppp3e?variant=verified)](https://m8ven.ai/mcp/x1pher-dbackup-mcp-1ppp3e)
 
 A typed Model Context Protocol server for curated backup administration of [DBackup](https://github.com/Skyfay/DBackup) through its authenticated API.
 
@@ -11,107 +12,136 @@ This community project is not affiliated with or endorsed by the DBackup project
 
 `dbackup-mcp` exposes explicit MCP workflows instead of a generic HTTP escape hatch. The current source package version is `0.1.0` and exposes 43 curated tools across:
 
-- backup jobs and read-only job planning;
-- execution history, cancellation and notification logs;
-- database, storage and notification adapters;
-- credential-profile references without credential reveal;
-- backup inspection, verification and bounded restore workflows;
-- capability and health diagnostics.
+- backup jobs and executions;
+- storage, database, directory, and notification adapters;
+- backup discovery, details, logs, verification, and downloads;
+- credentials with secret-safe mutation paths;
+- schedules, retention policies, naming templates, exclude presets, and container policies;
+- tags, notifications, metrics, health, audit access, and application settings;
+- bounded restore planning, dry-run validation, full restores, selected database restores, and selected file restores.
 
-The server deliberately excludes raw HTTP, credential reveal, backup download/deletion, API-key administration, user/RBAC/SSO administration and unsupported DBackup UI-internal server actions.
+See [`docs/tools.md`](docs/tools.md) for the complete tool catalog and mutation policy.
 
-See the complete [Tool reference](docs/tools.md) for every tool, mutation classification, destructive semantics, permissions and important guards.
+## Deliberate exclusions
 
-## Feedback and contributions
+The MCP intentionally does **not** expose:
 
-Use [GitHub Issues](https://github.com/X1pheR/dbackup-mcp/issues) for bug reports and feature requests and pull requests for proposed changes. See [CONTRIBUTING.md](CONTRIBUTING.md) for the development workflow, test requirements, and change expectations. Security issues must follow the private process in [SECURITY.md](SECURITY.md).
+- arbitrary raw HTTP requests;
+- credential reveal or private-key retrieval;
+- direct backup deletion;
+- generic backup download tools;
+- API-key administration;
+- user, RBAC, SSO, or session administration;
+- unsupported UI-internal server actions.
 
-User-visible release changes are summarized in [CHANGELOG.md](CHANGELOG.md).
+These boundaries are part of the public MCP contract rather than temporary omissions.
 
 ## Requirements
 
-- Python `3.12+`
-- DBackup `3.2.0` as the tested and supported baseline; other versions are unverified unless explicitly documented
-- a DBackup API key with only the permissions required by the enabled MCP workflows
-- an MCP client or gateway that supports STDIO servers
-- `uv` for the documented source workflow
+- Python 3.12+
+- a reachable DBackup instance
+- a DBackup API key stored in a private file
+- DBackup 3.2.0 is the tested compatibility baseline
 
-## Configuration
+## Installation
 
-| Variable | Required | Default | Meaning |
-|---|---:|---|---|
-| `DBACKUP_BASE_URL` | yes | - | DBackup HTTP(S) origin without `/api`, for example `https://backup.example.com`. |
-| `DBACKUP_API_KEY_FILE` | yes | - | Private regular file containing one DBackup API key. Group/other permissions are rejected. |
-| `DBACKUP_CREDENTIAL_SECRET_DIR` | no | - | Private directory containing mode-`0600` JSON credential payload files for explicit credential create/update tools. |
-| `DBACKUP_REQUEST_TIMEOUT_SECONDS` | no | `15` | Per-request timeout in seconds, greater than zero and at most 120. |
+Clone the repository and install with `uv`:
 
-Example MCP registration from an installed package:
-
-```json
-{
-  "mcpServers": {
-    "dbackup": {
-      "command": "dbackup-mcp",
-      "env": {
-        "DBACKUP_BASE_URL": "https://backup.example.com",
-        "DBACKUP_API_KEY_FILE": "/run/secrets/dbackup-api-key",
-        "DBACKUP_CREDENTIAL_SECRET_DIR": "/run/secrets/dbackup-credentials"
-      }
-    }
-  }
-}
+```bash
+git clone https://github.com/X1pheR/dbackup-mcp.git
+cd dbackup-mcp
+uv sync --frozen
 ```
 
-Omit `DBACKUP_CREDENTIAL_SECRET_DIR` when the MCP should not create or update DBackup credential profiles from local secret files.
-
-## Running from source
-
-The repository includes `uv.lock` for a reproducible source environment.
+For development and tests:
 
 ```bash
 uv sync --frozen --extra test
-DBACKUP_BASE_URL=https://backup.example.com \
-DBACKUP_API_KEY_FILE=/run/secrets/dbackup-api-key \
-uv run --frozen dbackup-mcp
 ```
 
-A gateway can also launch the checkout with `uv run --frozen --directory /path/to/dbackup-mcp dbackup-mcp` and the same environment variables.
+## Configuration
 
-## Permissions
+The server uses file-backed secrets rather than accepting secret values through MCP arguments.
 
-DBackup remains the authorization boundary. Grant only the permissions required by the workflows exposed to a given MCP consumer; a gateway can further restrict the visible tool set.
+Required environment variables:
 
-The full 43-tool surface can require job, history, source, destination, notification, storage/restore and credential-reference permissions. It does **not** require credential reveal, backup download/delete, API-key administration, user/RBAC/SSO administration or recovery-kit access. See the [Tool reference](docs/tools.md#dbackup-api-key-permissions) for the exact full-surface permission set.
+```text
+DBACKUP_BASE_URL=https://backup.example.com
+DBACKUP_API_KEY_FILE=/run/secrets/dbackup_api_key
+```
 
-## Security
+Optional environment variables:
 
-- API keys and credential payloads are file-backed and are never accepted as plaintext MCP arguments.
-- Secret input files must be private regular files; adapter inputs reject DBackup-sensitive configuration keys and use credential-profile references instead.
-- DBackup responses and error details are sanitized before model-visible output is returned.
-- No generic request escape hatch exists.
-- Destructive tools are explicitly annotated and confirmation is enforced where required; selected-file restore supports a dry-run path.
-- All tools publish `openWorldHint=false`.
+```text
+DBACKUP_REQUEST_TIMEOUT_SECONDS=15
+DBACKUP_CREDENTIAL_SECRET_DIR=/run/secrets/dbackup-credentials
+```
 
-See [SECURITY.md](SECURITY.md) for vulnerability reporting and the maintained security boundary. See [Secure Development](docs/SECURE-DEVELOPMENT.md) for the project-specific secure-design model and common vulnerability mitigations.
+`DBACKUP_API_KEY_FILE` must point to a private regular file. Group/other permissions are rejected. `DBACKUP_CREDENTIAL_SECRET_DIR` is only needed for the explicit credential create/update tools and must contain private mode-0600 JSON payload files.
 
-## Compatibility
+## Running
 
-DBackup `3.2.0` is the tested and supported baseline. The bundled OpenAPI description does not fully cover directory-job and granular file-restore behavior, so this project keeps a small source-verified `3.2.0` compatibility layer covered by contract tests.
+Run the MCP server over stdio:
 
-Some objects used by DBackup's web job editor are available only through application-internal server actions rather than public API-key REST discovery. `dbackup-mcp` does not depend on those internal UI actions; known IDs may be supplied where the public job API accepts them. See the [Tool reference](docs/tools.md#compatibility-boundary) for details.
+```bash
+uv run dbackup-mcp
+```
 
-## Development and release
+The package also exposes the Python module entry point:
 
-Run the repository-local verification entry point:
+```bash
+uv run python -m dbackup_mcp
+```
+
+## Permissions and least privilege
+
+DBackup API permissions still govern what the server can do. The MCP does not bypass DBackup authorization.
+
+Use a dedicated API key with only the permissions required for the workflows you intend to expose. Treat the API key as a privileged operational credential because many DBackup administration operations are inherently high impact.
+
+## Security behavior
+
+The MCP applies an explicit security boundary around DBackup:
+
+- API keys are loaded from private files and never accepted through tool arguments;
+- credential secret payloads are loaded only from an explicitly configured private directory;
+- sensitive adapter keys are rejected rather than forwarded;
+- model-visible responses and errors are sanitized;
+- no generic request tool exists;
+- destructive operations require explicit confirmation;
+- restore workflows support planning and dry-run validation before execution;
+- MCP tool metadata keeps `openWorldHint=false`.
+
+Report vulnerabilities privately through GitHub's security reporting flow. See [`SECURITY.md`](SECURITY.md).
+
+See [Secure Development](docs/SECURE-DEVELOPMENT.md) for the project-specific secure-design model and common vulnerability mitigations.
+
+## Compatibility boundary
+
+This repository intentionally targets a tested DBackup baseline rather than claiming compatibility with every upstream release. The current baseline is DBackup 3.2.0.
+
+When DBackup changes its API, update the compatibility evidence and tests before claiming support for the newer version.
+
+## Development
+
+Run the repository verification suite with:
 
 ```bash
 ./scripts/verify.sh
 ```
 
-GitHub Actions uses the same verification path. Dependabot maintains the locked dependency set and pinned workflow dependencies within accepted compatibility ranges. OpenSSF Scorecard runs on `main` and weekly and publishes its public result for independent repository-security review.
+That command installs the locked test environment, compiles the package, runs the full test suite, builds the wheel and source distribution, and verifies the generated artifacts.
 
-Normal development does not publish a release. An accepted strict SemVer tag (`vMAJOR.MINOR.PATCH`) triggers the release workflow, which fails closed while the repository is private, verifies the exact tag/source/package version, reruns verification, proves two independent wheel/source builds are byte-identical, generates signed GitHub/Sigstore build provenance for the release artifacts, creates a draft release, attaches artifacts plus `SHA256SUMS` and the provenance bundle, and only then publishes the release. It does not publish to PyPI.
+Repository maintenance also includes:
+
+- Dependabot for GitHub Actions and Python dependencies;
+- CodeQL analysis for Python and Actions;
+- OpenSSF Scorecard analysis;
+- secret scanning and push protection;
+- signed GitHub/Sigstore provenance for future release artifacts.
+
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) for contribution expectations and [`CHANGELOG.md`](CHANGELOG.md) for release history.
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+MIT. See [`LICENSE`](LICENSE).
