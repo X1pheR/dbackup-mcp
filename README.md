@@ -2,6 +2,7 @@
 
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/X1pheR/dbackup-mcp/badge)](https://scorecard.dev/viewer/?uri=github.com/X1pheR/dbackup-mcp)
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/14174/badge)](https://www.bestpractices.dev/projects/14174)
+[![Verified by M8ven](https://m8ven.ai/badge/mcp/x1pher-dbackup-mcp-1ppp3e?variant=verified)](https://m8ven.ai/mcp/x1pher-dbackup-mcp-1ppp3e)
 
 A typed Model Context Protocol server for curated backup administration of [DBackup](https://github.com/Skyfay/DBackup) through its authenticated API.
 
