@@ -91,7 +91,7 @@ The full 43-tool surface can require job, history, source, destination, notifica
 - Destructive tools are explicitly annotated and confirmation is enforced where required; selected-file restore supports a dry-run path.
 - All tools publish `openWorldHint=false`.
 
-See [SECURITY.md](SECURITY.md) for vulnerability reporting and the maintained security boundary.
+See [SECURITY.md](SECURITY.md) for vulnerability reporting and the maintained security boundary. See [Secure Development](docs/SECURE-DEVELOPMENT.md) for the project-specific secure-design model and common vulnerability mitigations.
 
 ## Compatibility
 
