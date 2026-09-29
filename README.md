@@ -10,7 +10,7 @@ This community project is not affiliated with or endorsed by the DBackup project
 
 ## What it covers
 
-`dbackup-mcp` exposes explicit MCP workflows instead of a generic HTTP escape hatch. The current source package version is `0.1.0` and exposes 43 curated tools across:
+`dbackup-mcp` exposes explicit MCP workflows instead of a generic HTTP escape hatch. The current source package version is `0.2.0` and exposes 44 curated tools across:
 
 - backup jobs and read-only job planning;
 - execution history, cancellation and notification logs;
@@ -32,7 +32,7 @@ User-visible release changes are summarized in [CHANGELOG.md](CHANGELOG.md).
 ## Requirements
 
 - Python `3.12+`
-- DBackup `3.2.0` as the tested and supported baseline; other versions are unverified unless explicitly documented
+- DBackup `3.4.0` as the tested and supported baseline; other versions are unverified unless explicitly documented
 - a DBackup API key with only the permissions required by the enabled MCP workflows
 - an MCP client or gateway that supports STDIO servers
 - `uv` for the documented source workflow
@@ -97,7 +97,7 @@ See [SECURITY.md](SECURITY.md) for vulnerability reporting and the maintained se
 
 ## Compatibility
 
-DBackup `3.2.0` is the tested and supported baseline. The bundled OpenAPI description does not fully cover directory-job and granular file-restore behavior, so this project keeps a small source-verified `3.2.0` compatibility layer covered by contract tests.
+DBackup `3.4.0` is the tested and supported baseline. The bundled OpenAPI description does not fully cover directory-job and granular file-restore behavior, so this project keeps a small source-verified `3.4.0` compatibility layer covered by contract tests.
 
 Some objects used by DBackup's web job editor are available only through application-internal server actions rather than public API-key REST discovery. `dbackup-mcp` does not depend on those internal UI actions; known IDs may be supplied where the public job API accepts them. See the [Tool reference](docs/tools.md#compatibility-boundary) for details.
 

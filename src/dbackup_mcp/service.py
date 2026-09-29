@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import asyncio
+import time
 from typing import Any
 
 from .api import DBackupClient
+from .sanitize import sanitize
 from .models import (
     AdapterCreateInput,
     AdapterTestInput,
@@ -30,9 +33,9 @@ class DBackupService:
 
     def capabilities(self) -> dict[str, Any]:
         return {
-            "dbackupContract": "3.2.0",
+            "dbackupContract": "3.4.0",
             "transport": "stdio",
-            "apiBoundary": "DBackup public REST API plus source-verified DBackup 3.2.0 routes used for directory and granular-restore workflows",
+            "apiBoundary": "DBackup public REST API plus source-verified DBackup 3.4.0 routes used for directory and granular-restore workflows",
             "apiKeyPermissionsForFullSurface": [
                 "jobs:read", "jobs:write", "jobs:execute", "history:read",
                 "sources:view", "sources:write", "destinations:read", "destinations:write",
@@ -155,6 +158,50 @@ class DBackupService:
                 data["logs"] = logs[-log_limit:]
             result = {**result, "data": data}
         return result
+
+    async def execution_wait_terminal(
+        self,
+        execution_id: str,
+        *,
+        max_wait_seconds: float = 30.0,
+        poll_interval_seconds: float = 2.0,
+        log_limit: int = 20,
+        sleep=asyncio.sleep,
+        monotonic=time.monotonic,
+    ) -> dict[str, Any]:
+        """Observe one existing execution until terminal state or bounded timeout."""
+        terminal_statuses = {"Success", "Partial", "Failed", "Cancelled"}
+        deadline = monotonic() + max_wait_seconds
+        polls = 0
+
+        while True:
+            observed = self.execution_get(execution_id, log_limit)
+            polls += 1
+            if not isinstance(observed, dict) or not isinstance(observed.get("data"), dict):
+                raise ValueError("DBackup execution response is missing data")
+
+            execution = sanitize(dict(observed["data"]))
+            status = execution.get("status")
+            ended_at = execution.get("endedAt")
+            terminal = status in terminal_statuses or bool(ended_at)
+            if terminal:
+                return {
+                    "terminal": True,
+                    "timedOut": False,
+                    "polls": polls,
+                    "execution": execution,
+                }
+
+            remaining = deadline - monotonic()
+            if remaining <= 0:
+                return {
+                    "terminal": False,
+                    "timedOut": True,
+                    "polls": polls,
+                    "execution": execution,
+                }
+
+            await sleep(min(poll_interval_seconds, remaining))
 
     def execution_cancel(self, execution_id: str, confirm: bool) -> Any:
         if not confirm:

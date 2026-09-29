@@ -23,6 +23,12 @@ class ExecutionGetInput(IdInput):
     log_limit: int = Field(default=100, ge=0, le=500)
 
 
+class ExecutionWaitInput(IdInput):
+    max_wait_seconds: float = Field(default=30.0, ge=0.0, le=90.0)
+    poll_interval_seconds: float = Field(default=2.0, ge=0.25, le=10.0)
+    log_limit: int = Field(default=20, ge=0, le=100)
+
+
 class JobDestinationSpec(BaseModel):
     config_id: str = Field(min_length=1)
     priority: int = 0
