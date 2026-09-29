@@ -26,6 +26,7 @@ from .models import (
     DatabaseStatsInput,
     EmptyInput,
     ExecutionGetInput,
+    ExecutionWaitInput,
     IdInput,
     JobEnabledInput,
     JobSpec,
@@ -75,6 +76,7 @@ async def list_tools() -> list[types.Tool]:
         _tool("job_run", "Start one backup job manually.", IdInput, read_only=False),
         _tool("history_list", "List recent backup and restore execution history.", SearchInput, read_only=True),
         _tool("execution_get", "Get one execution with model-visible logs bounded to the requested tail length.", ExecutionGetInput, read_only=True),
+        _tool("execution_wait_terminal", "Wait boundedly for one existing DBackup execution to reach terminal state without starting, replaying, cancelling, or changing it.", ExecutionWaitInput, read_only=True, idempotent=True),
         _tool("execution_cancel", "Cancel one running execution. Requires confirm=true.", ConfirmedIdInput, read_only=False, destructive=True),
         _tool("adapters_list", "List database, storage, or notification adapters with secrets removed.", AdapterListInput, read_only=True),
         _tool("adapter_get", "Get one adapter with secrets removed.", IdInput, read_only=True),
@@ -131,6 +133,14 @@ async def call_tool(name: str, arguments: Any) -> Sequence[types.TextContent | t
         elif name == "history_list": result = _service.history_list(_validate(SearchInput, arguments).limit)
         elif name == "execution_get":
             a = _validate(ExecutionGetInput, arguments); result = _service.execution_get(a.id, a.log_limit)
+        elif name == "execution_wait_terminal":
+            a = _validate(ExecutionWaitInput, arguments)
+            result = await _service.execution_wait_terminal(
+                a.id,
+                max_wait_seconds=a.max_wait_seconds,
+                poll_interval_seconds=a.poll_interval_seconds,
+                log_limit=a.log_limit,
+            )
         elif name == "execution_cancel":
             a = _validate(ConfirmedIdInput, arguments); result = _service.execution_cancel(a.id, a.confirm)
         elif name == "adapters_list":

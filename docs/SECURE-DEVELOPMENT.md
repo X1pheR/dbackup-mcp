@@ -28,7 +28,7 @@ This document records the security design principles and common vulnerability cl
 | Injection or malformed structured input | Tool inputs are typed and validated; sensitive adapter keys are rejected; enums and bounded numeric/string inputs reject unsupported forms before API execution. |
 | Sensitive error propagation | API responses and nested error details are recursively sanitized before being returned through MCP. |
 | Dependency or workflow supply-chain compromise | Python dependencies are locked; GitHub Actions are full-SHA pinned; Dependabot, CodeQL, Secret Scanning, Push Protection, OpenSSF Scorecard, and release provenance provide independent review signals. |
-| Compatibility drift causing unsafe behavior | DBackup `3.2.0` is the tested baseline; source-verified compatibility behavior is isolated and covered by contract tests rather than silently accepting undocumented server behavior. |
+| Compatibility drift causing unsafe behavior | DBackup `3.4.0` is the tested baseline; source-verified compatibility behavior is isolated and covered by contract tests rather than silently accepting undocumented server behavior. |
 
 ## Review expectations
 

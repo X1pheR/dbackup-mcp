@@ -46,7 +46,7 @@ def test_storage_check_path_request_shape() -> None:
 
 def test_capabilities_describes_supported_contract_without_secrets() -> None:
     result = DBackupService(RecordingClient()).capabilities()
-    assert result["dbackupContract"] == "3.2.0"
+    assert result["dbackupContract"] == "3.4.0"
     assert result["apiBoundary"]
     assert "credential_reveal" in result["excludedTools"]
 
