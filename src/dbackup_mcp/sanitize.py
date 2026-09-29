@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-# Mirrors DBackup 3.2.0 SENSITIVE_KEYS, plus generic Authorization/API-key aliases.
+# Mirrors the DBackup sensitive-key contract verified through 3.4.0, plus generic Authorization/API-key aliases.
 _SECRET_KEYS = {
     "password", "token", "secret", "secretkey", "secretaccesskey", "accesskey",
     "accesskeyid", "apikey", "api_key", "webhookurl", "uri", "passphrase",

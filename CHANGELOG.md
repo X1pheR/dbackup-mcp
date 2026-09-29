@@ -8,6 +8,12 @@ This file records user-visible changes to `dbackup-mcp`. Security fixes with a p
 - Future releases publish signed GitHub/Sigstore build provenance alongside checksums and reproducible package artifacts.
 - Added explicit contribution and private vulnerability-reporting routes.
 
+## 0.2.0 - 2026-09-29
+
+- Added `execution_wait_terminal`, a bounded read-only waiter for existing backup and restore executions with explicit timeout and bounded log output.
+- Kept terminal waiting idempotent: it issues only execution-read requests and never starts, replays, cancels or modifies work.
+- Raised the tested DBackup compatibility baseline to `3.4.0` after current source/runtime verification and live contract acceptance.
+
 ## 0.1.0 - 2026-08-14
 
 Initial public release.

@@ -1,6 +1,6 @@
 # Tool reference
 
-Complete MCP tool reference for `dbackup-mcp` source package version `0.1.0`, tested against DBackup `3.2.0`.
+Complete MCP tool reference for `dbackup-mcp` source package version `0.2.0`, tested against DBackup `3.4.0`.
 
 The MCP schemas returned by the server are the authoritative input contract. This page owns the public tool inventory, mutation classification, destructive semantics and the guards that materially affect use.
 
@@ -21,6 +21,7 @@ The MCP schemas returned by the server are the authoritative input contract. Thi
 | `job_run` | Write | No | Start one backup job manually. |
 | `history_list` | Read | No | List recent backup and restore execution history. |
 | `execution_get` | Read | No | Get one execution with model-visible logs bounded to the requested tail length. |
+| `execution_wait_terminal` | Read | No | Wait up to 90 seconds for one existing execution to reach terminal state; never starts, replays, cancels, or changes an execution. |
 | `execution_cancel` | Write | Yes | Cancel one running execution. Requires confirm=true. |
 | `adapters_list` | Read | No | List database, storage, or notification adapters with secrets removed. |
 | `adapter_get` | Read | No | Get one adapter with secrets removed. |
@@ -57,8 +58,9 @@ All tools publish complete MCP annotations with `openWorldHint=false`. A write t
 ## Important guards
 
 - `job_plan` is read-only. It validates referenced database sources, selected databases, directory SOURCE adapters, source paths and DESTINATION adapters before a job is created or replaced. Directory sources default to `stop_containers=false`; explicitly enabling container stopping produces a warning.
-- Adapter create/update/test inputs reject fields matching DBackup `3.2.0`'s sensitive-key contract. Credential-profile IDs are supplied through `primary_credential_id` and `ssh_credential_id` instead.
+- Adapter create/update/test inputs reject fields matching DBackup `3.4.0`'s sensitive-key contract. Credential-profile IDs are supplied through `primary_credential_id` and `ssh_credential_id` instead.
 - `credential_create_from_secret_file` and `credential_update_from_secret_file` accept only a file name inside `DBACKUP_CREDENTIAL_SECRET_DIR`. The JSON payload itself is never a model-visible argument. The directory and file permissions are validated before use.
+- `execution_wait_terminal` is read-only and idempotent. It observes only an existing execution, polls at a bounded interval, returns bounded logs, and times out without changing execution state.
 - `job_delete`, `adapter_delete`, `credential_delete` and `execution_cancel` require `confirm=true`.
 - `restore_start` requires `confirm=true`.
 - `restore_files` requires `confirm=true` unless `dry_run=true`, which allows target and selection validation without writing restored data.
@@ -66,7 +68,7 @@ All tools publish complete MCP annotations with `openWorldHint=false`. A write t
 
 ## DBackup API-key permissions
 
-The complete tool surface can require these DBackup `3.2.0` permissions, depending on which workflows are invoked:
+The complete tool surface can require these DBackup `3.4.0` permissions, depending on which workflows are invoked:
 
 ```text
 jobs:read
@@ -114,8 +116,8 @@ These are product and security boundaries, not missing raw escape hatches.
 
 ## Compatibility boundary
 
-DBackup's bundled `3.2.0` OpenAPI specification does not fully describe its directory-job and granular file-restore model. `dbackup-mcp` therefore keeps a deliberately small `3.2.0` compatibility layer tested against the corresponding runtime routes rather than generating a broad client from OpenAPI alone.
+DBackup's bundled `3.4.0` OpenAPI specification does not fully describe its directory-job and granular file-restore model. `dbackup-mcp` therefore keeps a deliberately small `3.4.0` compatibility layer tested against the corresponding runtime routes rather than generating a broad client from OpenAPI alone.
 
 Some objects used by DBackup's web job editor—such as retention policies, encryption profiles, naming templates, schedule presets and notification templates—are loaded through application-internal server actions instead of public API-key REST discovery. `dbackup-mcp` does not depend on those internal UI actions. A known ID may be supplied when the public job API accepts it; creating or discovering such objects remains an operator/UI bootstrap responsibility until DBackup exposes a supported REST contract for them.
 
-DBackup `3.2.0` is the tested and supported baseline. A newer release is unverified until route/schema changes have been reviewed and the contract suite has passed for that version.
+DBackup `3.4.0` is the tested and supported baseline. A newer release is unverified until route/schema changes have been reviewed and the contract suite has passed for that version.
