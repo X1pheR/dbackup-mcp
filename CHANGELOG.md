@@ -8,6 +8,12 @@ This file records user-visible changes to `dbackup-mcp`. Security fixes with a p
 - Future releases publish signed GitHub/Sigstore build provenance alongside checksums and reproducible package artifacts.
 - Added explicit contribution and private vulnerability-reporting routes.
 
+## 0.2.1 - 2026-10-09
+
+- Added optional `refresh=true` to `backups_list` to bypass DBackup's storage-list cache for real-time storage enumeration using existing protected API credentials.
+- Kept the default cached behavior and bounded maximum results; no standalone SMB client or new credential path.
+- Added request-shape and model-default regression tests.
+
 ## 0.2.0 - 2026-09-29
 
 - Added `execution_wait_terminal`, a bounded read-only waiter for existing backup and restore executions with explicit timeout and bounded log output.
