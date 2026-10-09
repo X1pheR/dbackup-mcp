@@ -241,6 +241,7 @@ class ArchiveBrowseInput(IdInput):
 class BackupsListInput(IdInput):
     limit: int = Field(default=200, ge=1, le=1000)
     type_filter: str | None = Field(default=None, max_length=100)
+    refresh: bool = False
 
 
 class BackupVerifyInput(IdInput):

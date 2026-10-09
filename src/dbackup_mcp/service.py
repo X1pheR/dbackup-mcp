@@ -319,11 +319,11 @@ class DBackupService:
     def storage_check_path(self, destination_id: str, path: str) -> Any:
         return self.client.request("POST", f"/storage/{destination_id}/check-path", body={"path": path})
 
-    def backups_list(self, destination_id: str, limit: int = 200, type_filter: str | None = None) -> Any:
+    def backups_list(self, destination_id: str, limit: int = 200, type_filter: str | None = None, refresh: bool = False) -> Any:
         result = self.client.request(
             "GET",
             f"/storage/{destination_id}/files",
-            query={"typeFilter": type_filter},
+            query={"typeFilter": type_filter, **({"refresh": "true"} if refresh else {})},
         )
         return result[:limit] if isinstance(result, list) else result
 

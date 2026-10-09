@@ -101,7 +101,7 @@ async def list_tools() -> list[types.Tool]:
         _tool("credential_delete", "Delete an unused credential profile. Requires confirm=true.", ConfirmedIdInput, read_only=False, destructive=True),
         _tool("storage_history", "Return bounded storage-usage history for one destination.", StorageHistoryInput, read_only=True),
         _tool("storage_check_path", "Check whether a restore target path is empty, occupied, or unverified without changing it.", StorageCheckPathInput, read_only=True),
-        _tool("backups_list", "List a bounded number of backup files for one storage destination.", BackupsListInput, read_only=True),
+        _tool("backups_list", "List a bounded number of backup files for one storage destination, optionally bypassing DBackup cache.", BackupsListInput, read_only=True),
         _tool("backup_verify", "Verify one backup file; asynchronous verification is the default.", BackupVerifyInput, read_only=False, idempotent=True),
         _tool("archive_browse", "Inspect one directory level inside a backup archive without restoring it.", ArchiveBrowseInput, read_only=True),
         _tool("restore_plan", "Analyze a backup and preview a restore request without changing data.", RestorePlanInput, read_only=True),
@@ -174,7 +174,7 @@ async def call_tool(name: str, arguments: Any) -> Sequence[types.TextContent | t
         elif name == "storage_check_path":
             a = _validate(StorageCheckPathInput, arguments); result = _service.storage_check_path(a.id, a.path)
         elif name == "backups_list":
-            a = _validate(BackupsListInput, arguments); result = _service.backups_list(a.id, a.limit, a.type_filter)
+            a = _validate(BackupsListInput, arguments); result = _service.backups_list(a.id, a.limit, a.type_filter, a.refresh)
         elif name == "backup_verify": result = _service.backup_verify(_validate(BackupVerifyInput, arguments))
         elif name == "archive_browse": result = _service.archive_browse(_validate(ArchiveBrowseInput, arguments))
         elif name == "restore_plan": result = _service.restore_plan(_validate(RestorePlanInput, arguments))
