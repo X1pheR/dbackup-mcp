@@ -89,3 +89,15 @@ def test_backups_list_bounds_model_visible_results_and_forwards_type_filter() ->
     result = DBackupService(client).backups_list("storage1", limit=3, type_filter="directory")
     assert [item["path"] for item in result] == ["backup-0", "backup-1", "backup-2"]
     assert client.calls == [("GET", "/storage/storage1/files", {"typeFilter": "directory"}, None)]
+
+
+def test_backups_list_fresh_mode_bypasses_cache_without_changing_default() -> None:
+    client = BackupListClient()
+    DBackupService(client).backups_list("storage1", limit=7, refresh=True)
+    assert client.calls == [("GET", "/storage/storage1/files", {"typeFilter": None, "refresh": "true"}, None)]
+
+
+def test_backups_list_fresh_mode_is_validated_in_schema() -> None:
+    from dbackup_mcp.models import BackupsListInput
+    assert BackupsListInput(id="storage1").refresh is False
+    assert BackupsListInput(id="storage1", refresh=True).refresh is True
