@@ -4,6 +4,8 @@ This file records user-visible changes to `dbackup-mcp`. Security fixes with a p
 
 ## Unreleased
 
+## 0.2.2 - 2026-11-01
+
 - Added public OpenSSF Scorecard reporting and protected-branch repository controls.
 - Future releases publish signed GitHub/Sigstore build provenance alongside checksums and reproducible package artifacts.
 - Added explicit contribution and private vulnerability-reporting routes.
